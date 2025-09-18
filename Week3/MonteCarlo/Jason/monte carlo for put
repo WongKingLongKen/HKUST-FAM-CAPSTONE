@@ -1,0 +1,61 @@
+import numpy as np
+import time
+
+
+# Parameters
+S0 = 60
+K = 65
+T = 1
+r = 0.03
+sigma = 0.3
+n = 200000
+
+
+
+
+# Start timing
+start = time.perf_counter()
+
+
+# Simulate n random normals
+Z = np.random.normal(0, 1, n)
+
+
+# Compute terminal stock prices
+ST = S0 * np.exp((r - 0.5 * sigma**2) * T + sigma * np.sqrt(T) * Z)
+
+
+# Compute payoffs for call option (undiscounted)
+payoffs = np.maximum(ST - K, 0)
+
+
+# Discount and average for option price
+option_price = np.exp(-r * T) * np.mean(payoffs)
+
+
+# Compute discounted payoffs for SE
+discounted_payoffs = np.exp(-r * T) * payoffs
+
+
+# Compute standard error using the given formula: sqrt( sum((x_i - xbar)^2) / (n*(n-1)) )
+xbar = option_price  # same as mean(discounted_payoffs)
+sum_sq_diff = np.sum((discounted_payoffs - xbar)**2)
+se = np.sqrt(sum_sq_diff / (n * (n - 1)))
+
+
+# End timing
+end = time.perf_counter()
+
+
+# Calculate duration
+duration = end - start
+
+
+percentage=se/option_price
+
+
+# Output results
+print(f"Option Price: {option_price:.10f}")
+print(f"Standard Error: {se:.10f}")
+print(f"Execution Time: {duration:.10f} seconds")
+print("percentage error=" ,percentage)
