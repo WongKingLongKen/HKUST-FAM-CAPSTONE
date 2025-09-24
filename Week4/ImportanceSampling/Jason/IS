@@ -1,1 +1,55 @@
+import numpy as np
+import time
 
+# Parameters
+S0 = 60
+K = 140
+T = 1
+r = 0.03
+sigma = 0.3
+n = 2000000
+theta =(np.log(K/S0))-(r-0.5*sigma**2)*T/(sigma*np.sqrt(T))   # Shift for importance sampling
+
+# Start timing
+start = time.perf_counter()
+
+# Simulate n random normals with shifted mean theta
+Z = np.random.normal(theta, 1, n)
+
+# Compute terminal stock prices under shifted distribution
+ST = S0 * np.exp((r - 0.5 * sigma**2) * T + sigma * np.sqrt(T) * Z)
+
+# Compute importance weights: w = exp(-theta * Z + theta^2 / 2)
+weights = np.exp(-theta * Z + 0.5 * theta**2)
+
+# Compute payoffs for call option (undiscounted)
+payoffs = np.maximum(ST - K, 0)
+
+# Apply weights to payoffs
+weighted_payoffs = payoffs * weights
+
+# Discount and average for option price
+option_price = np.exp(-r * T) * np.mean(weighted_payoffs)
+
+# Compute discounted weighted payoffs for standard error
+discounted_weighted_payoffs = np.exp(-r * T) * weighted_payoffs
+
+# Compute standard error: sqrt( sum((x_i - xbar)^2) / (n*(n-1)) )
+xbar = option_price  # same as mean(discounted_weighted_payoffs)
+sum_sq_diff = np.sum((discounted_weighted_payoffs - xbar)**2)
+se = np.sqrt(sum_sq_diff / (n * (n - 1)))
+
+# End timing
+end = time.perf_counter()
+
+# Calculate duration
+duration = end - start
+
+# Calculate percentage error
+percentage = se / option_price if option_price != 0 else float('inf')
+
+# Output results
+print(f"Option Price: {option_price:.10f}")
+print(f"Standard Error: {se:.10f}")
+print(f"Execution Time: {duration:.10f} seconds")
+print(f"Percentage Error: {percentage:.10f}")
