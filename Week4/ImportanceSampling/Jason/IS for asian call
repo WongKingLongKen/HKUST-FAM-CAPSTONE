@@ -1,0 +1,67 @@
+import numpy as np
+from scipy.optimize import fsolve
+import time
+start = time.perf_counter()
+
+def asian_option_monte_carlo(S0, K, r, sigma, T, m, N, use_is=True):
+
+    dt = T / m
+    times = np.arange(1, m + 1) * dt
+
+    if use_is:
+        def avg_forward(delta):
+            return np.mean(np.exp((r + delta) * times))
+        
+        def eq(delta):
+            return S0 * avg_forward(delta) - K
+        
+        delta0 = 0.0
+        sol = fsolve(eq, delta0, full_output=True)
+        if sol[2] != 1:
+            print("fsolve did not converge, using delta=0")
+            delta = 0.0
+        else:
+            delta = sol[0][0]
+        theta = delta / sigma
+        theta_array = np.full(m, theta)
+    else:
+        theta_array = np.zeros(m)
+
+    Z = np.random.normal(size=(N, m))
+    increments = ((r - 0.5 * sigma**2) * dt + sigma * theta_array * dt)[np.newaxis, :] + sigma * np.sqrt(dt) * Z
+    log_S = np.cumsum(increments, axis=1) + np.log(S0)
+    S_paths = np.exp(log_S)
+    averages = np.mean(S_paths, axis=1)
+    payoffs = np.maximum(averages - K, 0)
+    
+    # Likelihood ratio components
+    components = -theta_array[np.newaxis, :] * np.sqrt(dt) * Z - 0.5 * (theta_array[np.newaxis, :] ** 2) * dt
+    log_L = np.sum(components, axis=1)
+    L = np.exp(log_L)
+    
+    adjusted_payoffs = payoffs * L
+    discount = np.exp(-r * T)
+    price = discount * np.mean(adjusted_payoffs)
+    std = discount * np.std(adjusted_payoffs) / np.sqrt(N)
+    
+    return price, std
+
+# Example usage:
+S0 = 60
+K = 145
+r = 0.03
+sigma = 0.3
+T = 1.0
+m = 365
+N = 1000000
+price, std = asian_option_monte_carlo(S0, K, r, sigma, T, m, N, use_is=True)
+end = time.perf_counter()
+
+
+# Calculate duration
+duration = end - start
+
+print(f"Price: {price}, Std: {std}")
+percentage=std/price
+print(f"Pencantage:{percentage}")
+print(f"duration:{duration}")
