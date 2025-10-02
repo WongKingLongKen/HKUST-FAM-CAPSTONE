@@ -7,7 +7,7 @@ starttime = time.perf_counter()
 S0 = 60
 K = 65
 T = 1
-n =8192*4
+n =32768
 r = 0.03
 sigma = 0.3
 
