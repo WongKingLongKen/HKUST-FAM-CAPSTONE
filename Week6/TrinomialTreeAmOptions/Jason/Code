@@ -1,0 +1,118 @@
+import numpy as np
+import math
+import time
+import matplotlib.pyplot as plt
+
+def trinomial_american_call_boundaries_vary_K_n_single_graph(S0, Ks, T, sigma, ns, r, q, lambda_=math.sqrt(3), save_path='exercise_boundaries_K_fixed_others.png'):
+  
+    results = {}
+    
+    # Prepare colors and linestyles for combinations (cycle through for clarity)
+    num_combos = len(Ks) * len(ns)
+    colors = plt.cm.tab10(np.linspace(0, 1, num_combos))
+    linestyles = ['-', '--', '-.', ':'] * (num_combos // 4 + 1)  # Cycle linestyles
+    
+    plot_idx = 0
+    
+    for K in Ks:
+        for n_idx, n in enumerate(ns):
+            key = (K, n)
+            print(f"Computing for K={K}, n={n}...")
+            starttime = time.perf_counter()
+            
+            dt = T / n
+            h = lambda_ * sigma * math.sqrt(dt)
+            mu = r - q - 0.5 * sigma**2
+            adj = (mu * math.sqrt(dt)) / (2 * lambda_ * sigma)
+            qu = 0.5 / (lambda_ ** 2) + adj
+            qd = 0.5 / (lambda_ ** 2) - adj
+            qm = 1 - 1 / (lambda_ ** 2)
+            discount = math.exp(-r * dt)
+            
+            # Initialize option values at maturity (1D array, index k = n + j, j from -n to n)
+            js = np.arange(-n, n + 1)
+            Ss = S0 * np.exp(js * h)
+            V = np.maximum(Ss - K, 0.0)
+            
+            # To store exercise boundary points: (t, boundary_S)
+            boundaries = []
+            
+            # Backward induction
+            for ii in range(n):
+                low = ii + 1
+                high = 2 * n - ii
+                j_slice = js[low:high]
+                S_slice = S0 * np.exp(j_slice * h)
+                continuation = discount * (
+                    qu * V[low + 1 : high + 1] +
+                    qm * V[low : high] +
+                    qd * V[low - 1 : high - 1]
+                )
+                intrinsic = S_slice - K
+                exercise_mask = intrinsic > continuation 
+                V[low:high] = np.maximum(continuation, intrinsic)
+                
+                # Find exercise boundary: smallest S where exercise occurs (start of exercise region from high S)
+                exercise_indices = np.where(exercise_mask)[0]
+                if len(exercise_indices) > 0:
+                    first_ex_idx = exercise_indices[0]  # First (smallest index, lowest S in exercise region)
+                    boundary_S = S_slice[first_ex_idx]
+                    t = (n - ii - 1) * dt  # Time from start
+                    boundaries.append((t, boundary_S))
+            
+            option_price = V[n]
+            endtime = time.perf_counter()
+            execution_time = endtime - starttime
+            
+            results[key] = {
+                'price': option_price,
+                'time': execution_time,
+                'boundaries': boundaries
+            }
+            
+            print(f"K={K}, n={n}: Price={option_price:.10f}, Time={execution_time:.10f}s")
+    
+    # Plot all in single graph
+    plt.figure(figsize=(16, 12))
+    for idx, (K, n) in enumerate([(kk, nn) for kk in Ks for nn in ns]):
+        key = (K, n)
+        if key in results and results[key]['boundaries']:
+            times = [t for t, s in results[key]['boundaries']]
+            prices = [s for t, s in results[key]['boundaries']]
+            linestyle = linestyles[idx % len(linestyles)]
+            label = f'K={K}, n={n}'  # Short label
+            plt.plot(times, prices, color=colors[idx], linestyle=linestyle, label=label, linewidth=1, alpha=0.7)
+    
+    plt.axhline(y=S0, color='black', linestyle='-', label=f'S0={S0}', linewidth=1.5)  # Use S0 instead of K for reference
+    plt.xlabel('Time to Maturity')
+    plt.ylabel('Stock Price')
+    plt.title(f'Early Exercise Boundaries: Varying K and n (American Call with Dividends, S0={S0}, sigma={sigma}, r={r}, q={q})')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)  # Smaller font for many labels
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    
+    return results
+
+# Parameters (fixed S0=60, sigma=0.3, r=0.03, q=0.02)
+S0 = 60.0
+Ks = [55, 60, 65, 70, 80]
+T = 1.0
+sigma = 0.3
+ns = [2048, 4096, 8192, 16384, 32768]  
+r = 0.03
+q = 0.02
+
+results = trinomial_american_call_boundaries_vary_K_n_single_graph(S0, Ks, T, sigma, ns, r, q)
+
+q_sample = 0.02
+n_sample = 4096
+lambda_ = math.sqrt(3)
+dt = T / n_sample
+mu = r - q_sample - 0.5 * sigma**2
+adj = (mu * math.sqrt(dt)) / (2 * lambda_ * sigma)
+qu = 0.5 / (lambda_ ** 2) + adj
+qd = 0.5 / (lambda_ ** 2) - adj
+qm = 1 - 1 / (lambda_ ** 2)
+print(f"\nSample Probabilities (for q={q_sample}, S0={S0}, sigma={sigma}, n={n_sample}):")
+print(f"qu: {qu}\nqm: {qm}\nqd: {qd}")
