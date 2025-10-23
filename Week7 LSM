@@ -1,1 +1,97 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsfonts}
+\geometry{a4paper, margin=1in}
+\title{Pricing Derivatives Using Monte-Carlo Simulation(especially for early exercising derivatives)}
+\author{Ken, Suman, Jason}
+\date{October 2025}
 
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Actually, after several developments and constructions of numerical methods for pricing derivatives, we know that Monte Carlo simulation is one of the simplest and fastest methods for pricing derivatives. However, in the previous report, we found that a limitation of Monte Carlo simulation is that it is difficult to price derivatives that feature early exercise. Hence, we are going to solve this problem in order to determine whether Monte Carlo simulation has an alternative approach that we can use to price early-exercise derivatives, such as American options.
+
+\section{Intuition of the Extension of Monte Carlo Simulation}
+
+In the traditional approach to pricing European options using Monte Carlo simulation, we generate paths for the Brownian motion $W_t$, which follows a standard normal distribution, and then use a set of these numbers to price the option. However, for early-exercise derivatives, the purpose of early exercise is that the instantaneous value received is much greater than the time value of money and the insurance value. Hence, it requires comparing the current payoff from exercising the option with the expected value of the payoff from holding the option. Then, we can use Monte Carlo simulation at any date and for any price of the underlying asset. By estimating the expected present value of holding the option at any date and for any price of the underlying asset, we can identify the critical price of the underlying asset at that date. One of the methods we introduce now is called Least Square Monte Carlo Method.
+\section{Methodology}
+To set up the basic scenario, define the expiration date $T$ and the initial price $S$, which follows standard Brownian motion:
+\[
+\frac{dS}{S} = \mu\,dt + \sigma\,dz
+\]
+
+where $\mu$ is the instantaneous rate of return, and $\sigma$ is the instantaneous standard deviation of the rate of return.
+
+At any time $t \in [0,T]$, denote the value of the put as $P_t$. Assume there exists at least one point where early exercise is optimal—if not, the option is European-style and requires no special consideration. Then, the value of the American put option at the initial date is defined as:
+\[
+P_0(S^*) = \max\,\mathbb{E}\left[ P_{t+\Delta t}(S_{t+\Delta t})\,e^{-\mu \Delta t} \right]
+\]
+where $S^*$ is the critical price.
+
+At time $T-\Delta t$, the value of the put is:
+\[
+\begin{cases}
+X - S_{T-\Delta t} & \text{if}\;\; S_{T-\Delta t} < S^*_{T-\Delta t} \\
+\mathbb{E}[P_t]\,e^{-\mu \Delta t} & \text{if}\;\; S_{T-\Delta t} \geq S^*_{T-\Delta t}
+\end{cases}
+\]
+
+Thus, for the critical value at time $T-\Delta t$:
+\[
+X - S^*_{T-\Delta t} = \mathbb{E}[P_t]\,e^{-\mu \Delta t}
+\]
+
+To find $S^*_{T-\Delta t}$, iteratively optimize the above relationship, identifying $S^*_{t-2\Delta t}$, $S^*_{t-3\Delta t}$, and so on, backward to time zero.
+
+The critical price is found by comparing $X - S_t$ and $\mathbb{E}[P_{t+\Delta t}]\,e^{-\mu \Delta t}$. The expectation $\mathbb{E}[P_{t+\Delta t}]\,e^{-\mu \Delta t}$ depends on future information that is not realizable at time $t$, so Monte Carlo simulation is used for each date.
+
+The simulation for the asset price is:
+\[
+S_t = S_{t-\Delta t} \exp \left[ (\mu - \frac{\sigma^2}{2}) \Delta t + \sigma \sqrt{\Delta t} z \right]
+\]
+
+When $S_t$ is known, estimate
+\[
+\mathbb{E}[P_t] = \mathbb{E}\left(\max(X - S_t, 0)\,e^{-\mu \Delta t}\right)
+\]
+by averaging the simulation results. Then compare $\mathbb{E}[p_t]$ with $X - S_t$; this comparison yields the critical value $S^*_t$, showing whether it is above $S_{t-\Delta t}$. By repeating this procedure and applying backward induction through the life of the option, all critical prices at each time $t$ can be found. The value of the option can then be estimated using a simulation initiated at time 0.
+
+The resulting optimal pricing formula is:
+\[
+P_t(S^*_t) = \max \left( \frac{1}{N} \sum_{i=1}^{N} Q_{t,i}[S_t] \right)
+\]
+where $i$ indexes the simulation run.
+
+\textbf{Algorithm:}
+\begin{enumerate}
+\item Begin with $S_t$.
+\item For a range $S_{t-\Delta t} < X$, identify $S^*_{t-\Delta t}$.
+\item Compare expected present value of holding the put, $X - S_{t-\Delta t}$, with $\mathbb{E}[P_t]\,e^{-\mu \Delta t}$.
+\item Find the range of prices where $X - S_{t-\Delta t} > \mathbb{E}[P_t]\,e^{-\mu \Delta t}$.
+\item Repeat the backward induction for the entire option's life.
+\item Once all critical prices are found, estimate the option value via a simulation started at time 0.
+\end{enumerate}
+
+\end{document}
+
+Monte Carlo simulation cannot handle early exercise since there is no way of knowing whether early
+exercise is optimal when a particular price is reached at a particular time.
+
+cuz to value the option at an intermediate time, we need the optimal exercise policy. But derivation of the policy requires backward propagation that a classical monte carlo doesn't support.
+
+https://www.valuationresearch.com/wp-content/uploads/2020/08/Simulation-and-the-Early-Exercise-Option-Problem_Dwight-Grant.pdf
+
+https://people.math.ethz.ch/~hjfurrer/teaching/LongstaffSchwartzAmericanOptionsLeastSquareMonteCarlo.pdf
