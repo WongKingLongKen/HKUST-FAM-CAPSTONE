@@ -1,0 +1,30 @@
+our case:
+monte carlo simulation vs lattice tree in Am bonds
+(Regression-based approximation)
+Not ex ~ f(t,S_t)
+a+bS_t+c(S_t)^2
+
+after successfully derived the algorithm in Am bonds then
+testcase: 
+not just call/ put options but also
+A callable convertible bond is a complex security that combines features of a callable bond, a convertible bond, and a standard bond. 
+The issuer has the right to redeem the bond before maturity (callable), while the investor has the option to convert the bond into a 
+predetermined number of the company's common shares (convertible). This combination provides flexibility for both the issuer and the 
+investor but also introduces more complexity in valuation due to the interplay of interest rate risk and stock price movements.
+
+only perpetual case is investigated but finite time not yet
+
+Case 1: convertible bond only (simple one)
+Case 2: callable bond only (read prof. chen's paper cuhk)
+if there's no overlapping in the exercising boundaries when we compare case 1 and 2, it'll be easier.
+Case 3: we can think about it if we have time
+
+Define
+1. Issuer's payoff
+2. Bondholder's payoff
+Workflow
+we dun know the effect of coupon payment at the maturity date so the order will be
+1. zero coupon
+2. single coupon
+continuous coupon (as prof. chen did)
+or discrete coupon
