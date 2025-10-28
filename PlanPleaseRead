@@ -28,3 +28,113 @@ we dun know the effect of coupon payment at the maturity date so the order will 
 2. single coupon
 continuous coupon (as prof. chen did)
 or discrete coupon
+
+
+
+
+Perfect — this is exactly the kind of capstone project where you can show both **mathematical maturity** and **computational skills**. Let’s break this down into two layers:  
+
+1. **Plain words summary of Chen’s paper** (so you can explain it to your professor without drowning in PDEs).  
+2. **Theoretical summary** (so you can connect it to your Monte Carlo and lattice tree work).  
+3. **Division of labor** (so your group can split the work into three coherent parts, each grounded in Chen’s framework but adapted to your project).  
+
+---
+
+## 🌱 Plain Words Summary of Chen’s Paper
+
+- **Convertible bonds** are like a mix of a bond and a stock option. The bondholder can convert into shares, but the company can also “call” the bond back.  
+- The tricky part: **bondholders and shareholders have conflicting interests**.  
+  - Bondholders want to convert when it benefits them.  
+  - Shareholders (the issuer) want to call when it benefits them.  
+- Chen’s key idea: instead of treating this as a simple option pricing problem, treat it as a **game** between two players (bondholder vs shareholder).  
+- Why a **non-zero-sum game**? Because both sides can win or lose depending on tax benefits and bankruptcy costs. It’s not just “your gain = my loss.”  
+- The model explains two puzzles observed in real markets:  
+  - **Late calls** (companies wait too long to call, even when it looks optimal to call earlier).  
+  - **Early calls** (companies sometimes call when it looks irrational).  
+- The explanation:  
+  - **Tax shields** (companies like keeping debt alive because coupon payments reduce taxable income).  
+  - **Bankruptcy risk** (too much debt increases the chance of collapse, so sometimes they call early to reduce risk).  
+- Mathematically, Chen reduces the problem to **variational inequalities** and finds **Nash equilibria** (optimal strategies for both sides).  
+
+---
+
+## 📘 Theoretical Summary (Undergraduate-Friendly)
+
+- **Setup**:  
+  - Company asset value \(V_t\) follows a stochastic process (like a geometric Brownian motion).  
+  - Bondholder receives coupons until conversion, call, or bankruptcy.  
+  - Shareholder decides when to call or declare bankruptcy.  
+  - Bondholder decides when to convert.  
+
+- **Payoffs**:  
+  - **Bondholder**: gets coupons + either conversion value (\(\alpha V_t\)) or call price \(K\).  
+  - **Shareholder**: gets residual equity value after paying bondholder.  
+- **Game structure**:  
+  - Bondholder solves an **optimal stopping problem** (when to convert).  
+  - Shareholder solves another **optimal stopping problem** (when to call or bankrupt).  
+  - Together, this is a **non-zero-sum stochastic game**.  
+- **Mathematical tool**:  
+  - The value functions satisfy a system of **variational inequalities**.  
+  - Nash equilibrium = pair of strategies (conversion boundary, call boundary, bankruptcy boundary).  
+- **Key results**:  
+  - There exists a **conversion boundary**: bondholder converts if \(V_t\) is high enough.  
+  - There exists a **bankruptcy boundary**: shareholder defaults if \(V_t\) is too low.  
+  - There may exist a **call region**: shareholder calls if \(V_t\) is in certain ranges.  
+  - These regions are **disjoint** (no overlap).  
+
+---
+
+## 🛠️ How This Connects to Your Project (Monte Carlo vs Lattice Tree)
+
+- In Chen’s paper, the boundaries are solved analytically (via variational inequalities).  
+- In your project, you can **numerically approximate these boundaries** using:  
+  - **Binomial Tree (Lattice)**: backward induction, checking at each node whether conversion/call is optimal.  
+  - **Monte Carlo (LSM)**: simulate many paths, regress continuation value against basis functions (like \(a+bS_t+cS_t^2\)), and approximate the optimal stopping boundary.  
+
+---
+
+## 👩‍💻 Division of Labor (3 Parts)
+
+Here’s a natural split for your group, inspired by Chen’s structure but adapted to your computational project:
+
+### **Part 1 – Convertible Bond Only (Bondholder’s Problem)**
+- Focus: **Bondholder’s optimal conversion strategy** (no call feature).  
+- Tools:  
+  - Binomial tree: find conversion boundary.  
+  - Monte Carlo (LSM): regression-based continuation value.  
+- Deliverable: Compare boundaries from both methods.  
+- Link to Chen: This is the **conversion stopping problem** in isolation.
+
+---
+
+### **Part 2 – Callable Bond Only (Issuer’s Problem, Chen’s Paper)**
+- Focus: **Shareholder’s optimal call strategy** (no conversion option).  
+- Tools:  
+  - Binomial tree: backward induction with call feature.  
+  - Monte Carlo: simulate and regress continuation value to decide call boundary.  
+- Deliverable: Show how call boundaries differ under tax shield vs no tax shield.  
+- Link to Chen: This is the **call + bankruptcy stopping problem**.
+
+---
+
+### **Part 3 – Callable Convertible Bond (Interaction / Game)**
+- Focus: **Combine both features** (bondholder conversion + issuer call).  
+- Tools:  
+  - Implement both boundaries together in binomial tree and Monte Carlo.  
+  - Check if boundaries overlap (Chen’s result: they shouldn’t).  
+- Deliverable: Show how tax shield + bankruptcy cost can generate both **early calls** and **late calls**.  
+- Link to Chen: This is the **non-zero-sum game equilibrium**.
+
+---
+
+## 🚀 Suggested Workflow Order
+1. Start with **zero-coupon** (simplest).  
+2. Add **single coupon**.  
+3. Extend to **continuous/discrete coupons** (closer to Chen’s model).  
+4. Compare **Monte Carlo vs Binomial Tree** at each stage.  
+
+---
+
+✅ This way, each of you has a **clear part** (bondholder, issuer, interaction), and together you reconstruct Chen’s framework in a computationally accessible way.  
+
+Would you like me to also **sketch pseudocode** for the Monte Carlo (LSM) and Binomial Tree versions of the conversion/call decision so you can directly start coding?
