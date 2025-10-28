@@ -32,14 +32,6 @@ or discrete coupon
 
 
 
-Perfect — this is exactly the kind of capstone project where you can show both **mathematical maturity** and **computational skills**. Let’s break this down into two layers:  
-
-1. **Plain words summary of Chen’s paper** (so you can explain it to your professor without drowning in PDEs).  
-2. **Theoretical summary** (so you can connect it to your Monte Carlo and lattice tree work).  
-3. **Division of labor** (so your group can split the work into three coherent parts, each grounded in Chen’s framework but adapted to your project).  
-
----
-
 ## 🌱 Plain Words Summary of Chen’s Paper
 
 - **Convertible bonds** are like a mix of a bond and a stock option. The bondholder can convert into shares, but the company can also “call” the bond back.  
