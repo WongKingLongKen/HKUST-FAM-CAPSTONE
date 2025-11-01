@@ -1,0 +1,103 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsfonts}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\title{Pricing Derivatives Using Monte-Carlo Simulation(especially for early exercising derivatives)}
+\author{Ken, Suman, Jason}
+\date{October 2025}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction to Convertible Bonds}
+
+A convertible bond is a hybrid security that combines features of both debt and equity. It allows the bondholder to convert the bond into a predetermined number of shares of the issuing company's stock at certain times during the bond's life, typically at the discretion of the bondholder. This embedded conversion option significantly influences the bond's value and introduces path-dependent behavior, as the bondholder's optimal conversion decision depends on the evolution of the underlying stock price.
+
+In this section, we investigate the pricing of convertible bonds under various coupon structures—zero-coupon, single-coupon, regular coupon payments, and continuous coupon payments—using Monte Carlo simulation. We focus initially on the zero-coupon case to build intuition and validate our methodology against a high-resolution trinomial tree benchmark.
+
+\section*{Intuition: Zero-Coupon Convertible Bond}
+
+Consider a zero-coupon convertible bond with maturity $T$ years and face value $B$. Over the interval $[0, T]$, the bondholder can convert the bond into one share of the underlying stock at any time $t \in [0, T]$. At any time $t$, the bondholder receives:
+
+\[
+\max(S_t, B) = B + \max(S_t - B, 0)
+\]
+
+This payoff reflects rational behavior:
+\begin{itemize}
+    \item If $S_t > B$, the bondholder converts immediately and receives the stock worth $S_t$.
+    \item If $S_t \leq B$, the bondholder holds or redeems the bond to receive the face value $B$ (assuming no early redemption penalty).
+\end{itemize}
+
+Thus, the convertible bond can be intuitively decomposed as:
+
+\[
+\text{Convertible Bond} = \text{Zero-Coupon Bond} + \text{American Call Option on Stock with Strike } B
+\]
+
+Under the \textbf{risk-neutral measure} $\mathbb{Q}$, the stock price follows the geometric Brownian motion:
+
+\[
+S_t = S_0 \exp\left( \left(r - \frac{\sigma^2}{2}\right)t + \sigma \sqrt{t} \, Z \right), \quad Z \sim \mathcal{N}(0,1)
+\]
+
+The fair value of the convertible bond at $t=0$ is therefore:
+
+\[
+V_0 = e^{-rT} \mathbb{E}^\mathbb{Q} \left[ \max(S_T, B) \right] = e^{-rT} \mathbb{E}^\mathbb{Q} \left[ B + \max(S_T - B, 0) \right]
+\]
+
+\[
+\boxed{V_0 = B e^{-rT} + C(S_0, B, T, r, \sigma)}
+\]
+
+where $C(\cdot)$ denotes the price of an \textbf{American call option} with strike $B$, due to the possibility of early conversion.
+
+\section*{Numerical Example}
+
+We price the zero-coupon convertible bond using the following parameters:
+
+\begin{itemize}
+    \item Initial stock price: $S_0 = 60$
+    \item Face value (strike): $B = 65$
+    \item Risk-free rate: $r = 0.03$
+    \item Volatility: $\sigma = 0.3$
+    \item Maturity: $T = 1$ year
+\end{itemize}
+
+\textbf{Benchmark (Trinomial Tree, $n = 32768$ steps):}
+
+\[
+V_0 = 68.97820424022926
+\]
+
+\textbf{Monte Carlo Simulation (Longstaff--Schwartz, $N = 100{,}000$ paths, $M = 4096$ steps):}
+
+\[
+V_0 = 68.9193787991
+\]
+
+\textbf{Relative Error:}
+
+\[
+\text{Error} = \left| \frac{68.97820424022926 - 68.9193787991}{68.97820424022926} \right| \times 100\% = 0.085\% < 0.1\%
+\]
+
+The error is well within acceptable bounds, confirming the accuracy of the Monte Carlo approach for pricing zero-coupon convertible bonds.
+
+
+
+\end{document}
