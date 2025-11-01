@@ -1,0 +1,42 @@
+import numpy as np
+import math
+import time 
+
+# Start timing
+starttime = time.perf_counter()
+S0 = 60
+K = 65
+T = 1
+n =32768
+r = 0.03
+sigma = 0.3
+
+
+lambda_ = math.sqrt(3)
+dt = T / n
+h = lambda_ * sigma * math.sqrt(dt)
+qu = 1 / (2 * lambda_**2) + (r - sigma**2 / 2) * math.sqrt(dt) / (2 * lambda_ * sigma)
+qm = 1 - 1 / lambda_**2
+qd = 1 / (2 * lambda_**2) - (r - sigma**2 / 2) * math.sqrt(dt) / (2 * lambda_ * sigma)
+offset = n
+V = np.zeros((n + 1, 2 * n + 1))
+js = np.arange(-n, n + 1)
+Ss = S0 * np.exp(js * h)
+V[n, :] = np.maximum(Ss - K , 0)
+discount = np.exp(-r * dt)
+for i in range(n - 1, -1, -1):
+    start = offset - i
+    end = offset + i + 1
+    V[i, start:end] = discount * (qu * V[i+1, start + 1 : end + 1] + qm * V[i+1, start : end] + qd * V[i+1, start - 1 : end - 1])
+v = V[0, offset]
+# End timing
+endtime = time.perf_counter()
+
+# Calculate duration
+duration = endtime - starttime
+B=K*np.exp(-r*T)
+print(f"Execution Time: {duration:.10f} seconds")
+print(f"qu: {qu}\nqm: {qm}\nqd: {qd}\nv: {v}")
+converible_bond_value_at_time_0=B+v
+print(f"B: {B}")
+print(f"convertible bond price at time 0: {converible_bond_value_at_time_0}")
