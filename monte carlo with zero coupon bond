@@ -1,0 +1,80 @@
+import numpy as np
+import time
+
+np.random.seed(12345)
+
+
+def simulate_paths(S0, mu, sigma, T, M, N):
+    dt = T / M
+    increments = np.random.normal((mu - 0.5*sigma**2)*dt,
+                                 sigma*np.sqrt(dt), (N, M))
+    log_S = np.cumsum(increments, axis=1)
+    S = S0 * np.exp(log_S)
+    S = np.hstack((S0 * np.ones((N, 1)), S))   # prepend S0
+    return S
+
+
+
+def longstaff_schwartz_call(S, K, r, T):
+    N, M_plus_1 = S.shape
+    M = M_plus_1 - 1
+    dt = T / M
+    discount_factor = np.exp(-r * dt)
+
+    V = np.maximum(S[:, -1] - K, 0)                # maturity payoff
+
+    for t in range(M-1, 0, -1):
+        in_the_money = S[:, t] > K
+        if not np.any(in_the_money):
+            V *= discount_factor
+            continue
+
+        X = S[in_the_money, t]
+        Y = V[in_the_money] * discount_factor
+
+        A = np.vstack([np.ones_like(X), X, X**2]).T
+        coeffs = np.linalg.lstsq(A, Y, rcond=None)[0]
+
+        continuation = coeffs[0] + coeffs[1]*X + coeffs[2]*X**2
+        exercise     = X - K
+
+        exercise_now = exercise > continuation
+        V[in_the_money] = np.where(exercise_now, exercise, continuation)
+        V *= discount_factor
+
+    price = np.mean(V * discount_factor)          # final discount to t=0
+    return price
+
+
+
+S0    = 60.0
+K     = 65.0          # strike
+mu    = 0.03          # real-world drift (only for simulation)
+r     = 0.03          # risk-free rate
+sigma = 0.3
+T     = 1.0
+M     = 4096          # time steps
+N     = 100_000       # Monte-Carlo paths
+
+
+
+
+start = time.time()
+paths = simulate_paths(S0, mu, sigma, T, M, N)
+call_price = longstaff_schwartz_call(paths, K, r, T)
+runtime = time.time() - start
+
+# Present value of the strike
+B = K * np.exp(-r * T)
+
+# Call + cash decomposition
+total = B + call_price
+
+
+print(f"{'Paths':>10} {'MC Call':>15} {'Runtime(s)':>12}")
+print("-" * 44)
+print(f"{N:10d} {call_price:15.10f} {runtime:12.4f}\n")
+
+print(f"B (PV of strike) = {B: .10f}")
+print(f"Call price       = {call_price: .10f}")
+print(f"B + Call         = {total: .10f}")
