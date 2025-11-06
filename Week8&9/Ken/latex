@@ -1,0 +1,175 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsfonts}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\title{Exercise Boundary for Least Squares Monte Carlo Simulation and Trinomial Tree}
+\author{Ken}
+\date{5th November 2025}
+\begin{document}
+\maketitle
+
+\section{Interpretation of Exercise Boundaries in Discrete Dividend Models}
+In this section, we interpret the results from the Least Squares Monte Carlo (LSMC) and trinomial tree methods for pricing convertible bonds with discrete dividend and coupon payments. The model is based on the two-person zero-sum game framework from Sirbu and Shreve (2006) \cite{sirbu2006two}, where the bondholder maximizes the bond value \(B\) through optimal conversion, while the issuer minimizes \(B\) (maximizing equity \(E = V - B\)) via calls. Chen et al. (2013) \cite{chen2010non} extends this to non-zero-sum games with tax benefits and bankruptcy costs, explaining empirical phenomena like early and late calls, but Sirbu-Shreve provides the foundational theorems for our discrete setup.
+
+\subsection{Model Overview and Mathematical Formulation}
+Convertible bonds are hybrid instruments combining debt features (coupons and principal repayment) with equity options (conversion to stock). The issuer may call the bond, forcing conversion or redemption at call price \(K\). In Sirbu-Shreve's model, the firm value \(X_t\) follows a geometric Brownian motion under the risk-neutral measure:
+\[
+dX_t = r X_t \, dt - c \, dt - \delta S_t \, dt + \sigma X_t \, dW_t,
+\]
+where \(S_t = X_t - B(t, X_t)\) is equity value, \(c\) is coupon rate, \(\delta\) is dividend rate, \(r\) is risk-free rate, and \(\sigma\) is volatility. Discrete dividends introduce jumps: stock price drops by fraction \(\delta\) at ex-dividend dates, prompting pre-dividend conversion to capture the payout.
+
+The bond value \(B(t, x)\) solves a Dynkin game:
+\[
+B(s, x) = \sup_{\tau} \inf_{\rho} J(s, x; \rho, \tau),
+\]
+where \(J\) is the expected discounted cash flows under strategies \(\tau\) (conversion) and \(\rho\) (call). Under conditions \(c \leq rK\) (conversion precedes call) or \(\delta K \leq c\) (call precedes conversion), the game reduces to optimal stopping (Theorem 3.1 in \cite{sirbu2006two}).
+
+In discrete setups, LSMC simulates paths with dividend jumps, regressing continuation values to find exercise boundaries. The trinomial tree discretizes time/space, adjusting for jumps at dividend times.
+
+Financially, discrete dividends create incentives for early conversion: bondholders convert pre-dividend to receive \(\gamma \delta S\), avoiding the stock drop, amplifying the tax-debt trade-off in Chen's model where high tax shields delay calls (late calls) and bankruptcy costs prompt early calls to reduce leverage.
+
+\subsection{Pricing Results}
+The LSMC and tree methods yield comparable bond prices, as shown in Table \ref{tab:prices} and Figure \ref{fig:bar_charts}. For a single dividend at \(t=1.0\), the LSMC bond price is 69.0182 (call price 5.9392, plus present value of the strike 63.0790), with runtime 17.96 seconds. The tree method gives 69.9159, with runtime 0.87 seconds. For semi-annual dividends, LSMC yields 68.4238 (call 5.3448), runtime 17.36 seconds, while tree gives 69.1186, runtime 0.84 seconds. The slight discrepancies may arise from approximation differences, with tree prices slightly higher, potentially due to discrete lattice effects.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Scenario & LSMC Bond & LSMC Runtime (s) & Tree Bond & Tree Runtime (s) \\
+\midrule
+Single Dividend & 69.0182 & 17.96 & 69.9159 & 0.87 \\
+Semi-annual Dividends & 68.4238 & 17.36 & 69.1186 & 0.84 \\
+\bottomrule
+\end{tabular}
+\caption{Bond price comparisons (LSMC: 100k paths; Tree: qu=0.167, qm=0.667, qd=0.167, v varies). Present value of strike \(B = 63.0790\).}
+\label{tab:prices}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{bond_price_comparison.png} % Replace with your bar chart image file
+\caption{Bond price comparisons: Single dividend (left) and semi-annual (right).}
+\label{fig:bar_charts}
+\end{figure}
+
+These prices arise from the Nash equilibrium of the game (Sirbu-Shreve Theorem 4.1), reducing to optimal stopping under certain conditions. The bond value \(B\) satisfies the PDE in continuation regions:
+\[
+\min\left( \max\left( B - \gamma S, -\mathcal{L}B + c \right), B - K \right) = 0,
+\]
+where \(\mathcal{L}B = r S \partial_S B + \frac{1}{2} \sigma^2 S^2 \partial_{SS} B - r B\). Discrete dividends modify this to account for jumps, leading to point-like boundaries.
+
+Additionally, varying dividend yields impacts pricing and boundaries, as shown in Table \ref{tab:div_yields}. Higher yields reduce bond prices due to increased dilution but raise early exercise premiums. Financially, higher \(\delta\) increases the incentive to convert pre-dividend, as bondholders miss dividends unless converted, linking to Chen's bankruptcy cost effects where high dividends amplify dilution fears, prompting early calls.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccc}
+\toprule
+Dividend Yield & Bond Price & Boundary at \(t=0\) & Early Exercise Premium \\
+\midrule
+0.03 & 68.6429 & 119.9994 & 0.5091 \\
+0.05 & 68.4071 & 120.0000 & 0.7893 \\
+0.07 & 68.1960 & 120.0000 & 1.0614 \\
+\bottomrule
+\end{tabular}
+\caption{Impact of dividend yields on LSMC results.}
+\label{tab:div_yields}
+\end{table}
+
+\subsection{Exercise Boundaries and Discrete Dividends}
+The exercise boundaries, plotted in Figure \ref{fig:boundaries}, reveal key insights. The LSMC boundary appears as discrete points, while the tree boundary is sparse or disappears near dividend times (e.g., \(t=1.0\) for single dividend, \(t=0.5,1.0\) for semi-annual).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{exercise_boundaries_full.png} % Replace with your full boundaries plot file
+\caption{Exercise boundaries: LSMC (blue points) vs. Tree (orange line). Dashed: Strike \(K=50\). Red dot: Initial stock price \(S_0=50\). Green lines: Dividend times.}
+\label{fig:boundaries}
+\end{figure}
+
+This sparsity is expected in models with discrete dividends. In continuous models without discrete payouts, the boundary is a smooth curve governed by the Black-Scholes-like PDE (Sirbu-Shreve Equation 2.1):
+\[
+\min\left( \max\left( B - \gamma S, -\mathcal{L}B + c \right), B - K \right) = 0,
+\]
+where \(\mathcal{L}B = r S \partial_S B + \frac{1}{2} \sigma^2 S^2 \partial_{SS} B - r B\), \(\gamma\) is the conversion ratio, \(c\) the coupon rate, and \(K\) the call price. The regions are: continuation (hold for coupons), conversion (\(B = \gamma S\)), and call (\(B = K\)).
+
+Sirbu-Shreve Theorem 3.1 states that if \(c < r K\), conversion precedes call (bondholder acts first); if \(\delta K < c\) (\(\delta\): dividend rate), call precedes conversion. In our discrete case, dividends introduce jumps: stock \(S\) drops by \(\delta\) at ex-dividend dates, but bondholders receive no dividend unless converted pre-dividend.
+
+Optimal conversion occurs \textit{right before} dividends to capture the payout:
+\[
+B(t^-, S) = \max\left( \gamma S (1 + \delta) - \text{lost coupons}, \, e^{-r \Delta t} \mathbb{E}[B(t^+, S(1 - \delta))] + c \Delta t \right).
+\]
+If \(\gamma \delta S >\) coupon value, convert at \(t^-\), creating point-like boundaries at dividend times. Between dividends, holding may dominate if coupons exceed expected dividends.
+
+In the tree, nodes align with time steps, making the boundary undefined between jumps—hence the ``disappearance'' (sparse points). LSMC regressions naturally yield points from simulated paths. Zoomed plots (Figure \ref{fig:zoom}) confirm clusters at these instants, matching empirical ``early conversions'' before dividends to avoid dilution (cf. Chen et al. for late/early calls). For single dividend, tree zoom shows a downward slope from ~65.5 to 65 near \(t=1\).
+
+Financially, pre-dividend conversion prevents loss from stock drop, as bondholders miss dividends post-drop. This amplifies the game: issuers may call pre-dividend to force surrender (early call per Chen, to reduce bankruptcy risk), or delay for tax shields (late call).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{exercise_boundaries_zoom.png} % Replace with your zoomed plots file
+\caption{Zoomed boundaries near dividend times: Single at \(t=1.0\) (left/top) and semi-annual at \(t=0.5\) (right/bottom). Points/lines indicate pre-dividend optimality.}
+\label{fig:zoom}
+\end{figure}
+
+Summaries (Table \ref{tab:summary_single} and \ref{tab:summary_semi}) show boundaries often N/A early (no exercise) and around 65 near dividends (above strike \(K=50\)).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Method & Bond Price & Boundary near \(t=0\) & Near \(t=1.0\) \\
+\midrule
+LSMC (Single) & 69.0182 & N/A & 65.00 \\
+Tree (Single) & 69.9159 & N/A & 65.00 \\
+\bottomrule
+\end{tabular}
+\caption{Summary for single dividend.}
+\label{tab:summary_single}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Method & Bond Price & Boundary near \(t=0\) & Near \(t=0.5\) & Near \(t=1.0\) \\
+\midrule
+LSMC (Semi) & 68.4238 & N/A & N/A & 65.00 \\
+Tree (Semi) & 69.1186 & N/A & N/A & 65.00 \\
+\bottomrule
+\end{tabular}
+\caption{Summary for semi-annual dividends.}
+\label{tab:summary_semi}
+\end{table}
+
+This discrete behavior explains why continuous approximations (e.g., in Chen) may miss jumps but capture tax/credit effects empirically. In Chen's non-zero-sum extension, tax benefits (\(\kappa\)) delay calls to retain shields, while bankruptcy costs (\(\rho\)) prompt early calls, matching observed returns: positive for out-of-money (good news signal), negative for in-money (dilution).
+
+\bibliographystyle{plain}
+\begin{thebibliography}{1}
+
+\bibitem{sirbu2006two}
+Mihai Sirbu and Steven~E. Shreve.
+\newblock A two-person game for pricing convertible bonds.
+\newblock {\em SIAM Journal on Control and Optimization}, 45(4):1508--1539, 2006.
+
+\bibitem{chen2010non}
+Nan Chen, Min Dai, and Xiangwei Wan.
+\newblock A non-zero-sum game approach to convertible bonds: Tax benefit, bankruptcy cost and early/late calls.
+\newblock {\em Mathematical Finance}, 23(1):57--93, 2013.
+
+\end{thebibliography}
+
+\section*{Appendix: Code Implementation}
+\lstinputlisting[language=Python, basicstyle=\scriptsize]{math4999_exboundaryandlsmc_finalized.py}
+
+\end{document}
