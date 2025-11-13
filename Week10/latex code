@@ -1,0 +1,67 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{url}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{amsfonts}
+\usepackage{float}
+\geometry{a4paper, margin=1in}
+\title{Investigating the Exercise Boundary Using Monte Carlo Simulation and Its Accuracy}
+\author{Ken, Suman, Jason}
+\date{November 2025}
+
+\begin{document}
+
+\maketitle
+
+
+
+\section{Investigating the Exercise Boundary of Convertible Bonds with Coupon Payment Features}
+
+\subsection{Intuition}
+In the previous section, we explored the key characteristics of convertible bonds and demonstrated how to price them using the least-squares Monte Carlo (LSMC) simulation method. This approach relies on backward induction to estimate continuation values and determine optimal exercise decisions at each time step, effectively mapping out the exercise boundary where the bondholder is indifferent between holding the bond and converting it into the underlying stock.
+
+However, a potential limitation---or ``loophole''---in this methodology arises from the choice of basis functions for the least-squares regression. Specifically, we employed a quadratic basis (polynomials up to second degree) to approximate the continuation value function. While quadratic approximations are computationally efficient and often sufficient for smooth payoff structures, they may not always capture the true nonlinearity or curvature of the exercise boundary, particularly in the presence of embedded options like coupons and dividends. Over- or under-fitting could lead to biased exercise decisions, potentially distorting the estimated boundary and, consequently, the bond's fair value.
+
+To address this concern, the current section investigates the robustness and performance of the quadratic approximation across various market scenarios. By comparing the LSMC-derived exercise boundaries (using quadratic regression) against a more precise benchmark---such as those obtained from a trinomial tree model---we can quantify approximation errors, assess goodness-of-fit metrics (e.g., $R^2$ and AIC), and visualize discrepancies. This analysis not only validates the quadratic basis but also highlights scenarios where alternative bases (e.g., rational functions) might be preferable, providing practical guidance for practitioners implementing LSMC in real-world pricing.
+
+\subsection{Basic Thoughts on Scenario Settings}
+Convertible bonds introduce complex interactions between fixed-income features (e.g., coupon payments) and equity-like conversion options, which are further influenced by the underlying stock's dividend yield. To systematically evaluate the quadratic approximation's efficacy, we consider scenarios defined by the relative magnitudes of the bond's continuous coupon rate $c$ and the stock's continuous dividend yield $q$:
+
+\begin{itemize}
+    \item \textbf{Case 1: $c < q$} (Coupon yield lower than dividend yield)
+    \item \textbf{Case 2: $c > q$} (Coupon yield higher than dividend yield)
+    \item \textbf{Case 3: $c = q$} (Coupon yield equal to dividend yield)
+\end{itemize}
+
+These cases reflect fundamental economic incentives for early exercise. The exercise boundary---typically an increasing function of time to maturity---marks the stock price threshold above which conversion becomes optimal, as the conversion value exceeds the expected continuation value (including accrued coupons and discounted future payoffs).
+
+Certain boundary cases can be dismissed upfront due to their lack of analytical or practical interest:
+
+\begin{itemize}
+    \item \textbf{Dividend yield $q = 0$}: Without dividends, there is no reason for early conversion. Exercising prematurely forfeits the bond's time value (interest accrual and optionality), making it naively suboptimal. The exercise boundary effectively collapses to the maturity date, rendering this scenario trivial and unworthy of further investigation in the context of approximation errors.
+    
+    \item \textbf{Coupon rate $c = 0$}: This reduces the instrument to a zero-coupon convertible bond, where the payoff is purely $\max(\text{face value}, \text{conversion value})$ at maturity. We have already analyzed this simpler case in prior sections using LSMC and tree-based methods, confirming that quadratic approximations perform adequately due to the monotonic payoff structure.
+    
+    \item \textbf{$c < q$}: Here, the stock's dividend yield outpaces the bond's coupon, creating a strong incentive to convert immediately upon reaching the conversion threshold. The bondholder forgoes higher-yielding dividends by holding the bond, so the exercise boundary hugs the initial conversion price closely (or even suggests immediate exercise). This deterministic-like behavior offers little insight into approximation challenges, as regression errors are minimal; thus, we exclude it from detailed scrutiny.
+\end{itemize}
+
+Our focus, therefore, narrows to the most nuanced and realistic scenario: \textbf{$c > q > 0$} (coupon exceeds dividend, but the stock pays a positive yield). In this regime, early exercise becomes viable only at sufficiently high stock prices, where the conversion value compensates for lost coupons and time value. The exercise boundary exhibits a characteristic ``hockey-stick'' shape---starting low near issuance and rising toward the conversion price at maturity---driven by the tension between coupon protection and equity upside.
+
+To probe the quadratic basis's performance, we implement LSMC with 10,000 simulated paths under geometric Brownian motion (GBM) for the stock price, discretizing time into 1,000 steps over a 1-year horizon. At each step, we regress continuation values using the quadratic basis $\{1, S_t, S_t^2\}$, where $S_t$ is the stock price at time $t$. For comparison, we benchmark against a trinomial tree with 50 recombining nodes, which provides a near-exact exercise boundary without approximation artifacts.
+
+Figure~\ref{fig:exercise_boundary} below illustrates the results for baseline parameters ($S_0 = 50$, face value = 1,000, conversion price = 50, $r = 5\%$, $\sigma = 20\%$, $c = 4\%$, $q = 2\%$):
+
+\includegraphics[width=0.5\textwidth]{monte_carlo_for_continuous_coupon_payment_convertible_bond.png}
+
+\section{Appendix}
+\lstinputlisting[language=Python, basicstyle=\scriptsize]{monte carlo for convertible bond.py}
+\end{document}
