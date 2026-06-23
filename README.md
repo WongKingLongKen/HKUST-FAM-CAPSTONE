@@ -51,6 +51,7 @@ The main finalized implementations are stored in:
 - `FinalizedCode/LSMCandTrinomialTree/math4999_continuousdividenddiscretecoupon_final.py`
 
 These files correspond to the final Monte Carlo, LSMC, and trinomial-tree experiments used in the thesis.
+The mixed `math4996` / `math4999` prefixes reflect the original course labels of the source notebooks and are preserved in the finalized filenames.
 
 ## Reading guide
 
